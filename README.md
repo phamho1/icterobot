@@ -18,4 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/drive/1S8UVQBLbQ_hjlEo2eLO3mY
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-![Image Alt]([image_url](https://github.com/phamho1/icterobot/blob/dea8019f6a616353d98ac8dbd751b8f2dcd5ed77/paypal_qr.png)

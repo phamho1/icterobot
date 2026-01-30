@@ -9,9 +9,9 @@ const ADMIN_EMAIL = 'phamvuphiho@gmail.com';
 const SUBSCRIPTION_PRICE = "$10.00 / month";
 const PAYPAL_LINK = `https://paypal.me/VuPhiHo`;
 const PAYPAL_DIRECT_LINK = "https://www.paypal.com/ncp/payment/GE4L8MF47D4JA";
+const PAYPAL_QR_IMAGE_URL = "https://raw.githubusercontent.com/phamho1/icterobot/dea8019f6a616353d98ac8dbd751b8f2dcd5ed77/paypal_qr.png";
 
 // Simulated Voice Profiles to create variety from limited system voices
-// REFINED: Pitch values adjusted to be closer to 1.0 to avoid robotic artifacts on Google Tiếng Việt.
 const VOICE_VARIANTS = [
   { id: 'standard', name: 'Female: Linh (Gốc)', pitch: 1.0, rate: 1.0 },
   { id: 'male_deep', name: 'Male: Hùng (Trầm)', pitch: 0.8, rate: 0.9 },
@@ -88,9 +88,7 @@ const App: React.FC = () => {
       const voices = window.speechSynthesis.getVoices();
       setAllBrowserVoices(voices);
       
-      // Smart Auto-Select logic
       if (voices.length > 0) {
-         // If language is VI, try to find Google Tiếng Việt or similar
          if (lang === 'vi') {
              const viVoice = voices.find(v => v.lang.startsWith('vi') && v.name.includes('Google')) 
                              || voices.find(v => v.lang.startsWith('vi'));
@@ -104,27 +102,20 @@ const App: React.FC = () => {
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
     
-    // Load and Validate Users (Auto-Downgrade Check)
     const rawUsers: User[] = JSON.parse(localStorage.getItem('icte_users') || '[]');
     const now = new Date();
     let usersChanged = false;
 
     const validatedUsers = rawUsers.map(u => {
-      // Admin is exempt from expiry
       if (u.role === 'admin') return u;
-
       if (u.isSubscribed && u.subscriptionStatus === 'active') {
-        // If an active user has no date, set it to now (migration fix)
         if (!u.subscriptionDate) {
            usersChanged = true;
            return { ...u, subscriptionDate: now.toISOString() };
         }
-
-        // Check expiry (1 month duration)
         const startDate = new Date(u.subscriptionDate);
         const expiryDate = new Date(startDate);
         expiryDate.setMonth(expiryDate.getMonth() + 1);
-
         if (now > expiryDate) {
           usersChanged = true;
           return {
@@ -139,25 +130,21 @@ const App: React.FC = () => {
 
     if (usersChanged) {
       localStorage.setItem('icte_users', JSON.stringify(validatedUsers));
-      // Update current user session if they were downgraded
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
         const updatedCurrent = validatedUsers.find(u => u.email === parsed.email);
         if (updatedCurrent && (!updatedCurrent.isSubscribed && parsed.isSubscribed)) {
            localStorage.setItem('icte_current_user', JSON.stringify(updatedCurrent));
            setCurrentUser(updatedCurrent);
-           // Show notification? 
         }
       }
       setAllUsers(validatedUsers);
     } else {
       setAllUsers(rawUsers);
     }
-
     return () => { window.speechSynthesis.onvoiceschanged = null; };
-  }, [lang]); // Re-run when lang changes to auto-select voice
+  }, [lang]);
 
-  // Auth Functions
   const sendSimulatedEmail = (title: string, body: string, code?: string) => {
     setSimulatedEmail({ title, body, code });
     setTimeout(() => setSimulatedEmail(null), 60000);
@@ -166,14 +153,11 @@ const App: React.FC = () => {
   const handleSocialLogin = (provider: 'google' | 'apple') => {
     setIsSocialLoading(provider);
     setAuthError(null);
-    
     setTimeout(() => {
       const users: User[] = JSON.parse(localStorage.getItem('icte_users') || '[]');
       const socialEmail = provider === 'google' ? ADMIN_EMAIL : 'guest.user@example.com';
       const socialUsername = provider === 'google' ? 'Pham Vu Phi Ho' : 'Pro User';
-      
       let user = users.find(u => u.email.toLowerCase() === socialEmail.toLowerCase());
-      
       if (!user) {
         const role = socialEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'user';
         const isAdm = role === 'admin';
@@ -197,7 +181,6 @@ const App: React.FC = () => {
         }
         localStorage.setItem('icte_users', JSON.stringify(users));
       }
-
       const sessionUser = { 
         username: user.username, 
         email: user.email, 
@@ -218,9 +201,7 @@ const App: React.FC = () => {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
-
     const users: User[] = JSON.parse(localStorage.getItem('icte_users') || '[]');
-
     if (authMode === AuthMode.REGISTER) {
       if (!authForm.username || !authForm.password || !authForm.email) {
         setAuthError("Please fill in all fields.");
@@ -230,7 +211,6 @@ const App: React.FC = () => {
         setAuthError("User already exists.");
         return;
       }
-      
       const isAdmin = authForm.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
       const newUser: User = { 
         username: authForm.username, 
@@ -242,11 +222,9 @@ const App: React.FC = () => {
         role: isAdmin ? 'admin' : 'user',
         subscriptionDate: isAdmin ? new Date().toISOString() : undefined
       };
-      
       users.push(newUser);
       localStorage.setItem('icte_users', JSON.stringify(users));
       setAllUsers(users);
-      
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       sendSimulatedEmail("Activate your ICTE account", `Verification code:`, code);
       setAuthForm(prev => ({ ...prev, activationCode: code }));
@@ -273,7 +251,6 @@ const App: React.FC = () => {
          u.email.toLowerCase() === authForm.username.toLowerCase()) && 
         u.password === authForm.password
       );
-
       if (user) {
         if (!user.isActivated) {
           setAuthMode(AuthMode.ACTIVATE);
@@ -283,7 +260,6 @@ const App: React.FC = () => {
           setAuthError("Account not activated.");
           return;
         }
-        
         const sessionUser = { 
           username: user.username, 
           email: user.email, 
@@ -315,21 +291,15 @@ const App: React.FC = () => {
     callback();
   };
 
-  // User requests payment
   const handlePaymentRequest = () => {
     if (!currentUser) return;
-    
-    // Update global user list
     const users: User[] = JSON.parse(localStorage.getItem('icte_users') || '[]');
     const updated = users.map(u => u.email === currentUser.email ? { ...u, subscriptionStatus: 'pending' as const } : u);
     localStorage.setItem('icte_users', JSON.stringify(updated));
     setAllUsers(updated);
-    
-    // Update local session
     const updatedSession: User = { ...currentUser, subscriptionStatus: 'pending' };
     localStorage.setItem('icte_current_user', JSON.stringify(updatedSession));
     setCurrentUser(updatedSession);
-    
     setShowUpgradeModal(false);
     sendSimulatedEmail("ICTE Pro Payment", "We are verifying your payment. Please allow up to 24 hours for Admin approval.");
     setAuthSuccess("Payment Request Sent! Admin approval required.");
@@ -342,7 +312,6 @@ const App: React.FC = () => {
     handleClear();
   };
 
-  // Admin toggles status
   const updateSubscriptionStatus = (email: string, status: 'active' | 'inactive') => {
     const users: User[] = JSON.parse(localStorage.getItem('icte_users') || '[]');
     const updated = users.map(u => {
@@ -352,17 +321,13 @@ const App: React.FC = () => {
           ...u, 
           isSubscribed: isActivating,
           subscriptionStatus: status,
-          // Set date to now if activating, otherwise keep existing date
           subscriptionDate: isActivating ? new Date().toISOString() : u.subscriptionDate
         };
       }
       return u;
     });
-    
     localStorage.setItem('icte_users', JSON.stringify(updated));
     setAllUsers(updated);
-    
-    // If updating self
     if (currentUser && currentUser.email === email) {
       const updatedUser = updated.find(u => u.email === email)!;
       localStorage.setItem('icte_current_user', JSON.stringify(updatedUser));
@@ -378,22 +343,16 @@ const App: React.FC = () => {
     setAllUsers(updated);
   };
 
-  // TTS Logic
   const filteredVoices = useMemo(() => {
     if (lang === 'vi') {
-      // For Vietnamese, we strictly find the best native voice and ONLY return that.
-      // Priority: "Google Tiếng Việt", or any voice with "Linh", or any VI voice.
       const viVoice = allBrowserVoices.find(v => v.lang.startsWith('vi') && v.name.includes('Google')) 
                       || allBrowserVoices.find(v => v.name.includes('Linh'))
                       || allBrowserVoices.find(v => v.lang.startsWith('vi'));
-      
       if (viVoice) {
-        // Return strictly one item with the display label "Linh"
         return [{ ...viVoice, displayLabel: 'Linh (Native Standard)' }];
       }
       return [];
     }
-    // For English, keep existing logic
     return allBrowserVoices.filter(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('google')).map(v => {
       const n = v.name.toLowerCase();
       const flag = (n.includes('us') || v.lang === 'en-US') ? '🇺🇸' : '🇬🇧';
@@ -401,7 +360,6 @@ const App: React.FC = () => {
     });
   }, [allBrowserVoices, lang]);
 
-  // Automatically update selected voice when language changes (handled in useEffect, but double checked here)
   useEffect(() => {
     if (filteredVoices.length > 0) {
       const currentVoiceExists = filteredVoices.find(v => v.voiceURI === selectedVoiceURI);
@@ -419,57 +377,35 @@ const App: React.FC = () => {
     }
     const nextText = queueRef.current.shift()!;
     const utterance = new SpeechSynthesisUtterance(nextText);
-    
-    // INTELLIGENT VOICE SELECTION
-    // Try to find the user's selected voice, OR a better match for the variant
     let voice = allBrowserVoices.find(v => v.voiceURI === selectedVoiceURI);
-    
-    // If we are in Vietnamese mode and have a specific male/female preference, check if system has a better native voice
     if (lang === 'vi') {
-         // Example: If variant is Male, look for "Nam" in voice list
          if (selectedVariantId.includes('male')) {
              const maleVoice = allBrowserVoices.find(v => v.lang.startsWith('vi') && (v.name.toLowerCase().includes('nam') || v.name.toLowerCase().includes('male')));
-             if (maleVoice) {
-                 voice = maleVoice; // Switch to native male voice if available
-                 // If using native male voice, reset pitch to default to avoid double-processing
-                 // We will handle this in the pitch assignment below
-             }
+             if (maleVoice) voice = maleVoice;
          }
     }
-
     if (voice) utterance.voice = voice;
-    
-    // Explicitly set the utterance language
     if (voice) {
       utterance.lang = voice.lang;
     } else {
       utterance.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
     }
-
-    // Apply Voice Variant Logic (Pitch/Rate adjustments)
     const variant = VOICE_VARIANTS.find(v => v.id === selectedVariantId) || VOICE_VARIANTS[0];
-    
-    // If we found a NATIVE matching voice (e.g. we wanted Male and found "Microsoft Nam"), 
-    // we should ignore the pitch shift intended for female-to-male conversion.
     const isNativeMatch = voice && (
         (selectedVariantId.includes('male') && (voice.name.toLowerCase().includes('nam') || voice.name.toLowerCase().includes('male'))) ||
         (selectedVariantId.includes('female') && (voice.name.toLowerCase().includes('nu') || voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('hoai my')))
     );
-
     if (isNativeMatch) {
         utterance.pitch = 1.0;
-        utterance.rate = variant.rate; // Keep rate adjustment
+        utterance.rate = variant.rate;
     } else {
         utterance.pitch = variant.pitch;
         utterance.rate = variant.rate;
     }
-    
     utterance.volume = 1.0;
-
     utterance.onstart = () => setAppState(AppState.SPEAKING);
     utterance.onend = () => { if (isSpeakingRef.current) speakNextBrowserChunk(); };
     utterance.onerror = (e) => { console.error("TTS Error", e); isSpeakingRef.current = false; setAppState(AppState.IDLE); };
-    
     window.speechSynthesis.speak(utterance);
   }, [allBrowserVoices, selectedVoiceURI, selectedVariantId, lang]);
 
@@ -780,12 +716,12 @@ const App: React.FC = () => {
              {/* QR Code Section */}
              <div className="bg-white p-4 rounded-3xl shadow-2xl shadow-black/50 mb-4 group transition-transform hover:scale-105 duration-300">
                <img 
-                 src="./paypal_qr.png" 
+                 src={PAYPAL_QR_IMAGE_URL} 
                  alt="PayPal Payment QR Code" 
                  className="w-48 h-48 object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity"
                  onError={(e) => {
-                   e.currentTarget.src = "https://placehold.co/200x200/png?text=QR+Code+Missing";
-                   e.currentTarget.alt = "Please add paypal_qr.png to project";
+                   e.currentTarget.src = "https://placehold.co/200x200/png?text=QR+Code+Error";
+                   e.currentTarget.alt = "Please verify image URL";
                  }}
                />
              </div>
@@ -821,16 +757,13 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold text-white">ICTE Robots Login</h2>
               <p className="text-slate-500 text-xs mt-1 italic">Sign in to sync your AI preferences</p>
             </div>
-
             <div className="space-y-3 mb-6">
               <button onClick={() => handleSocialLogin('google')} disabled={!!isSocialLoading} className="w-full py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50">
                 <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 Continue with Google
               </button>
             </div>
-
             <div className="flex items-center gap-4 mb-6"><div className="flex-1 h-px bg-slate-800" /><span className="text-[10px] text-slate-600 font-bold uppercase">or email</span><div className="flex-1 h-px bg-slate-800" /></div>
-
             <form onSubmit={handleAuth} className="space-y-4">
               {authMode === AuthMode.LOGIN ? (
                 <>
@@ -852,7 +785,6 @@ const App: React.FC = () => {
                 {authMode === AuthMode.LOGIN ? 'Sign In' : authMode === AuthMode.REGISTER ? 'Register' : 'Verify Account'}
               </button>
             </form>
-
             <div className="mt-6 text-center">
               <button onClick={() => { setAuthMode(authMode === AuthMode.LOGIN ? AuthMode.REGISTER : AuthMode.LOGIN); setAuthError(null); }} className="text-xs text-slate-500 hover:text-blue-400">
                 {authMode === AuthMode.LOGIN ? "Create an account" : "Back to Sign In"}
