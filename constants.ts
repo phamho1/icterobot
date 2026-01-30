@@ -14,7 +14,7 @@ export const PRESETS: Record<'en' | 'vi', Preset[]> = {
     {
       id: 'lesson-en',
       label: 'Classroom',
-      text: "Welcome, everyone. Today we will practice speaking fluently.\nFirst, read the text silently. Then, answer my questions in complete sentences."
+      text: "Welcome, everyone. This AI Text-to-speech App is used to help you convert your texts to audio file with high quality. Enter your text in the box and click the Speak. Then export High quality file."
     },
     {
       id: 'news-en',
@@ -31,7 +31,7 @@ export const PRESETS: Record<'en' | 'vi', Preset[]> = {
     {
       id: 'lesson-vi',
       label: 'Lớp học',
-      text: "Chào mừng các em đến với lớp học. Hôm nay chúng ta sẽ luyện kỹ năng nói trôi chảy.\nĐầu tiên, các em hãy đọc thầm văn bản, sau đó trả lời các câu hỏi."
+      text: "Chào mừng các banj đến với text-to-speech để chuyển đổi các đoạn văn thành file NÓI. Hãy nhập đoạn văn vào chọn tính năng tiếng Viet "VI" rồi bấm vào Speak. Chức năng Gemini AI Pro sẽ giúp cho các bạn có file Nói giống người hơn và diễn cảm hơn."
     },
     {
       id: 'news-vi',
