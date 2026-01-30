@@ -1,0 +1,7 @@
+{
+  "name": "Copy of ICTE Robots: AI Text-to-speech",
+  "description": "A high-performance Text-to-Speech application featuring built-in browser voices and advanced Gemini AI speech synthesis with multiple character voices.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
